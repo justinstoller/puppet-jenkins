@@ -1,5 +1,57 @@
 
 class jenkins {
+  include jenkins::upstream
+
+  jenkins-plugin {
+    'chucknorris':
+      name => 'chucknorris',
+      ensure => present,
+  }
+
+  jenkins-plugin {
+    'ant':
+      name => 'ant',
+      ensure => absent,
+  }
+
+  jenkins-plugin {
+    'maven-plugin':
+      name => 'maven-plugin',
+      ensure => absent,
+  }
+
+  jenkins-plugin {
+    'translation':
+      name => 'translation',
+      ensure => absent,
+  }
+
+  jenkins-plugin {
+    'subversion':
+      name => 'subversion',
+      ensure => absent,
+  }
+
+  jenkins-plugin {
+    'ssh-slaves':
+      name => 'ssh-slaves',
+      ensure => absent,
+  }
+
+  jenkins-plugin {
+    'javadoc':
+      name => 'javadoc',
+      ensure => absent,
+  }
+
+  jenkins-plugin {
+    'cvs':
+      name => 'cvs',
+      ensure => absent,
+  }
+}
+
+class jenkins::upstream {
   include jenkins::repo
   include jenkins::package
 
@@ -10,6 +62,15 @@ class jenkins::package {
   package {
     "jenkins" :
       ensure => installed;
+  }
+
+  service {
+    'jenkins':
+      ensure => running,
+      enable => true,
+      hasstatus => true,
+      hasrestart => true,
+      require => Package['jenkins'],
   }
 }
 
@@ -55,7 +116,7 @@ class jenkins::repo {
   }
 }
 
-define install-jenkins-plugin($name, $version=0) {
+define jenkins-plugin($name, $version=0, $ensure=present) {
   $plugin     = "${name}.hpi"
   $plugin_dir = "/var/lib/jenkins/plugins"
 
@@ -88,7 +149,20 @@ define install-jenkins-plugin($name, $version=0) {
       require  => File["${plugin_dir}"],
       path     => ["/usr/bin", "/usr/sbin",],
       user     => "jenkins",
-      unless   => "test -f ${plugin_dir}/${plugin}";
+      creates   => "${plugin_dir}/${plugin}",
+      onlyif => $ensure ? {
+        present => 'test -n "1"',
+        absent => 'test -n ""',
+      },
+  }
+
+  file { 
+    "${plugin_dir}/${plugin}":
+      owner => 'jenkins',
+      ensure => $ensure,
+      require => Exec["download-${name}"],
+      mode => '640',
+      notify => Service['jenkins'],
   }
 }
 
