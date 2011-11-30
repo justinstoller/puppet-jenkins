@@ -10,6 +10,11 @@ define jenkins::package() {
       require => Package["jenkins"],
   }
 
+  group {
+    "nogroup":
+      ensure => present,
+  }
+
   file {
     "/var/lib/jenkins/puppet/xml_builder":
       source => "puppet:///modules/jenkins/xml_builder",
@@ -19,6 +24,7 @@ define jenkins::package() {
   file {
     "/var/lib/jenkins/plugins" :
       owner  => "jenkins",
+      group => "nogroup",
       ensure => $title ? {
         "present" => "directory",
         "purged" => "absent",

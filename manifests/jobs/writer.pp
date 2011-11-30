@@ -5,6 +5,7 @@ define jenkins::jobs::writer ($job_type = "matrix-project") {
       ensure => present,
       source => "/var/lib/jenkins/puppet/${title}/compiled.xml",
       owner => "jenkins",
+      group => "nogroup",
       notify => Class["jenkins::service"],
       require => [ Jenkins::Jobs::Setup["${title}"], File["/var/lib/jenkins/puppet/${title}/compiled.xml"] ]
   }
