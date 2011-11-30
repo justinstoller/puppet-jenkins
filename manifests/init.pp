@@ -4,6 +4,7 @@ class jenkins {
   include jenkins::package
 
   Class["jenkins::repo"] -> Class["jenkins::package"]
+
 }
 
 class jenkins::package {
@@ -70,7 +71,8 @@ define install-jenkins-plugin($name, $version=0) {
     file {
       "${plugin_dir}" :
         owner  => "jenkins",
-        ensure => directory;
+        ensure => directory,
+	require => Class["jenkins::package"],
     }
   }
 
