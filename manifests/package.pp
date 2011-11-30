@@ -20,5 +20,10 @@ define jenkins::package() {
       backup => false,
       recurse => true,
   }
+
+  file {
+    "/var/lib/jenkins/puppet":
+      ensure => directory,
+  }
 }
 

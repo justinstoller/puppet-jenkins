@@ -10,6 +10,10 @@ class jenkins {
     Class["jenkins::repo"] 
       -> Jenkins::Package["present"] 
       -> Class["jenkins::service"]
+
+    jenkins::plugin { "chucknorris": }
+
+    include jenkins::job::factor
   }
 }
 
