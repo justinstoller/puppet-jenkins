@@ -19,16 +19,11 @@ define jenkins::package() {
   file {
     "/var/lib/jenkins/plugins" :
       owner  => "jenkins",
-      group => "jenkins",
       ensure => $title ? {
         "present" => "directory",
         "purged" => "absent",
       },
-      require => Package["jenkins"],
-#      notify => $title ? {
-#        "present" => Class["jenkins::service"],
-#        "purged" => "",
-#      },
+      require => [ Package["jenkins"], User["jenkins"] ],
       purge => true,
       force => true,
       backup => false,

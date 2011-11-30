@@ -5,7 +5,6 @@ define jenkins::jobs::writer ($job_type = "matrix-project") {
       ensure => present,
       source => "/var/lib/jenkins/puppet/${title}/compiled.xml",
       owner => "jenkins",
-      group => "jenkins",
       notify => Class["jenkins::service"],
       require => [ Jenkins::Jobs::Setup["${title}"], File["/var/lib/jenkins/puppet/${title}/compiled.xml"] ]
   }
@@ -20,7 +19,7 @@ define jenkins::jobs::writer ($job_type = "matrix-project") {
 
   exec {
     "write_${title}":
-      command => "/var/lib/jenkins/puppet/xml_builder",
+      command => "/var/lib/jenkins/puppet/xml_builder '/var/lib/jenkins/puppet/${title}/config.xml' ${title} ${job_type}",
       refreshonly => true,
       require => Jenkins::Jobs::Setup["${title}"],
       subscribe => File["/var/lib/jenkins/puppet/${title}"],

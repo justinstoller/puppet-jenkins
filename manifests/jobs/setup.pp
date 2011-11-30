@@ -11,6 +11,5 @@ define jenkins::jobs::setup() {
       ensure => directory,
       require => Jenkins::Package["present"],
       owner => "jenkins",
-      group => "jenkins",
   }
 }
