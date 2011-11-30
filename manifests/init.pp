@@ -1,16 +1,22 @@
 
 class jenkins {
   include jenkins::repo
-  include jenkins::package
+  jenkins::package { "present": }
 
-  Class["jenkins::repo"] -> Class["jenkins::package"]
+  if (defined(Jenkins::Package["present"])) {
 
+    Class["jenkins::repo"] -> Jenkins::Package["present"]
+
+    install-jenkins-plugin { "chuck":
+      name => "chucknorris",
+    }
+  }
 }
 
-class jenkins::package {
+define jenkins::package() {
   package {
     "jenkins" :
-      ensure => installed;
+      ensure => $title;
   }
 }
 
@@ -72,7 +78,7 @@ define install-jenkins-plugin($name, $version=0) {
       "${plugin_dir}" :
         owner  => "jenkins",
         ensure => directory,
-	require => Class["jenkins::package"],
+	require => Jenkins::Package["present"],
     }
   }
 
