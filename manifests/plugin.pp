@@ -1,4 +1,7 @@
 define jenkins::plugin($name, $version=0, $ensure=present) {
+
+  include jenkins::package
+
   $plugin     = "${name}.hpi"
   $plugin_dir = "/var/lib/jenkins/plugins"
 
