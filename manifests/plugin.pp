@@ -34,5 +34,26 @@ define jenkins::plugin($name, $version=0) {
       user     => "jenkins",
       unless   => "test -f ${plugin_dir}/${plugin}";
   }
+
+
+  file {
+    "${plugin_dir}/${plugin}":
+      owner => 'jenkins',
+      ensure => $ensure,
+      require => Exec["download-${name}"],
+      mode => '640',
+      notify => Class['jenkins::service'],
+  }
+
+  file {
+    "${plugin_dir}/${name}":
+      owner => 'jenkins',
+      ensure => 'directory',
+#        present => 'directory',
+#        default => $ensure,
+#      },
+      require => Class['jenkins::service'],
+      mode => 750,
+  }
 }
 

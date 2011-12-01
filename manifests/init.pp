@@ -4,8 +4,9 @@ class jenkins {
   jenkins::package { "present": }
 
   if (defined(Jenkins::Package["present"])) {
+    include jenkins::service
 
-    Class["jenkins::repo"] -> Jenkins::Package["present"]
+    Class["jenkins::repo"] -> Jenkins::Package["present"] -> Class["jenkins::service"]
 
     jenkins::plugin { "chuck":
       name => "chucknorris",
