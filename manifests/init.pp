@@ -1,3 +1,59 @@
+#class jenkins {
+#  include jenkins::plugins
+#
+#  jenkins::plugin::chucknorris {
+#    'chuck':
+#      beard => 'true',
+#      roundhouse => 'always',
+#  }
+#}
+#
+#class jenkins::plugins {
+#  include jenkins::plugin
+#}
+#
+#class jenkins::plugin::action {
+#  file {
+#    '/root/jenkins.xml':
+#       ensure => file,
+#       content => template('jenkins/config_writer'),
+#  }
+#}
+#
+#class jenkins::plugin::state {
+#
+#  $plugin = [ ]
+#  $base_array = [{
+#                 project => [
+#                   { actions => '' },
+#                   { description => 'description' },
+#                   { plugins => [
+#                     { name => $plugin }
+#                   ]}
+#                 ]
+#               }]
+#}
+#
+#class jenkins::plugin {
+#
+#  define chucknorris ($beard = 'blah', $roundhouse = 'blah') {
+#    include jenkins::plugin::state
+#    $plugin = 'chucknorris'
+#
+#    $jenkins::plugin::state::plugin += $plugin
+#
+#    $jenkins::plugin::state::base_array += [{
+#                 project => [
+#                   { beard => $beard },
+#                   { roundhouse => $roundhouse }
+#                 ]
+#               }]    
+#
+#    $configs = $jenkins::plugin::state::base_array
+#    include jenkins::plugin::action
+#  }
+#}
+#
 
 class jenkins {
   include jenkins::upstream
@@ -6,48 +62,6 @@ class jenkins {
     'chucknorris':
       name => 'chucknorris',
       ensure => present,
-  }
-
-  jenkins-plugin {
-    'ant':
-      name => 'ant',
-      ensure => absent,
-  }
-
-  jenkins-plugin {
-    'maven-plugin':
-      name => 'maven-plugin',
-      ensure => absent,
-  }
-
-  jenkins-plugin {
-    'translation':
-      name => 'translation',
-      ensure => absent,
-  }
-
-  jenkins-plugin {
-    'subversion':
-      name => 'subversion',
-      ensure => absent,
-  }
-
-  jenkins-plugin {
-    'ssh-slaves':
-      name => 'ssh-slaves',
-      ensure => absent,
-  }
-
-  jenkins-plugin {
-    'javadoc':
-      name => 'javadoc',
-      ensure => absent,
-  }
-
-  jenkins-plugin {
-    'cvs':
-      name => 'cvs',
-      ensure => absent,
   }
 }
 
@@ -131,7 +145,11 @@ define jenkins-plugin($name, $version=0, $ensure=present) {
     file {
       "${plugin_dir}" :
         owner  => "jenkins",
-        ensure => directory;
+        ensure => directory,
+        recurse => true,
+        purge => true,
+        backup => false,
+        force => true,
     }
   }
 
@@ -163,6 +181,17 @@ define jenkins-plugin($name, $version=0, $ensure=present) {
       require => Exec["download-${name}"],
       mode => '640',
       notify => Service['jenkins'],
+      backup => false,
+  }
+
+  file {
+    "${plugin_dir}/${name}":
+      ensure => $ensure ? {
+        'present' => 'directory',
+        'absent' => 'absent',
+      },
+      backup => false,
+      force => true,
   }
 }
 

@@ -1,0 +1,4 @@
+
+<% configs.each do |config| %>
+  <%= config %>
+<% end %>
