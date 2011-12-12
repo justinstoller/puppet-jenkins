@@ -11,4 +11,9 @@ class jenkins::job::puppet {
       action => "rake unit",
       type => sh,
   }
+
+  jenkins::jobs::publisher {
+    $job_name:
+      recipients => 'justin@puppetlabs.com',
+  }
 }

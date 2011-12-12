@@ -10,4 +10,10 @@ class jenkins::job::factor {
     $job_name:
       action => "rake spec",
   }
+
+  jenkins::jobs::publisher {
+    $job_name:
+      recipients => 'justin@puppetlabs',
+      not_every_unstable => true,
+  }
 }
