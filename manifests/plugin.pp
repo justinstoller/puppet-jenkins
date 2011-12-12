@@ -9,20 +9,9 @@ define jenkins::plugin($name, $version=0) {
     $base_url   = "http://updates.jenkins-ci.org/latest/"
   }
 
-  if (!defined(File["${plugin_dir}"])) {
-    file {
-      "${plugin_dir}" :
-        owner  => "jenkins",
-        ensure => directory,
-	require => Jenkins::Package["present"],
-    }
-  }
-
-  if (!defined(User["jenkins"])) {
-    user {
-      "jenkins" :
-        ensure => present;
-    }
+  user {
+    "jenkins" :
+      ensure => present,
   }
 
   exec {
@@ -32,28 +21,25 @@ define jenkins::plugin($name, $version=0) {
       require  => File["${plugin_dir}"],
       path     => ["/usr/bin", "/usr/sbin",],
       user     => "jenkins",
-      unless   => "test -f ${plugin_dir}/${plugin}";
+      unless   => "test -f ${plugin_dir}/${plugin}",
   }
 
 
   file {
-    "${plugin_dir}/${plugin}":
+    "${plugin_dir}/${plugin}" :
       owner => 'jenkins',
-      ensure => $ensure,
+      ensure => present,
       require => Exec["download-${name}"],
-      mode => '640',
+      mode => '644',
       notify => Class['jenkins::service'],
   }
 
   file {
-    "${plugin_dir}/${name}":
+    "${plugin_dir}/${name}" :
       owner => 'jenkins',
       ensure => 'directory',
-#        present => 'directory',
-#        default => $ensure,
-#      },
       require => Class['jenkins::service'],
-      mode => 750,
+      mode => 755,
   }
 }
 
