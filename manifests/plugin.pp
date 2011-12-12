@@ -1,9 +1,9 @@
-define jenkins::plugin($name, $version=0) {
-  $plugin     = "${name}.hpi"
+define jenkins::plugin($version=0) {
+  $plugin     = "${title}.hpi"
   $plugin_dir = "/var/lib/jenkins/plugins"
 
   if ($version != 0) {
-    $base_url = "http://updates.jenkins-ci.org/download/plugins/${name}/${version}/"
+    $base_url = "http://updates.jenkins-ci.org/download/plugins/${title}/${version}/"
   }
   else {
     $base_url   = "http://updates.jenkins-ci.org/latest/"
@@ -15,7 +15,7 @@ define jenkins::plugin($name, $version=0) {
   }
 
   exec {
-    "download-${name}" :
+    "download-${title}" :
       command  => "wget --no-check-certificate ${base_url}${plugin}",
       cwd      => "${plugin_dir}",
       require  => File["${plugin_dir}"],
@@ -35,7 +35,7 @@ define jenkins::plugin($name, $version=0) {
   }
 
   file {
-    "${plugin_dir}/${name}" :
+    "${plugin_dir}/${title}" :
       owner => 'jenkins',
       ensure => 'directory',
       require => Class['jenkins::service'],
