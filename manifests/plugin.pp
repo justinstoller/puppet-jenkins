@@ -9,11 +9,6 @@ define jenkins::plugin($version=0) {
     $base_url   = "http://updates.jenkins-ci.org/latest/"
   }
 
-  user {
-    "jenkins" :
-      ensure => present,
-  }
-
   exec {
     "download-${title}" :
       command  => "wget --no-check-certificate ${base_url}${plugin}",

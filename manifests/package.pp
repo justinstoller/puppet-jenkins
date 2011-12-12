@@ -4,6 +4,11 @@ define jenkins::package() {
       ensure => $title;
   }
 
+  user {
+    "jenkins" :
+      ensure => present,
+  }
+
   file {
     "/var/lib/jenkins/plugins" :
       owner  => "jenkins",
