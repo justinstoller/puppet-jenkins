@@ -14,6 +14,7 @@ class jenkins {
     jenkins::plugin { "chucknorris": }
 
     include jenkins::job::factor
+    include jenkins::job::puppet
   }
 }
 
