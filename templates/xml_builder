@@ -1,11 +1,4 @@
 <%-
-require 'yaml'
-require 'pp'
-
-default = YAML.load_file "/var/lib/jenkins/puppet/#{title}/default.yml" 
-builder = YAML.load_file "/var/lib/jenkins/puppet/#{title}/01_build_step.yml"
-publisher = YAML.load_file "/var/lib/jenkins/puppet/#{title}/publisher.yml"
-
 module DeepMerge
 
   class InvalidParameter < StandardError; end
@@ -244,8 +237,15 @@ class Hash
   include DeepMerge::DeepMergeHash
 end
 
-default.deep_merge!(builder) 
-default.deep_merge!(publisher) 
+require 'yaml'
+
+default = YAML.load_file "/var/lib/jenkins/puppet/#{title}/default.yml" 
+files = Dir.glob "/var/lib/jenkins/puppet/#{title}/*.yml"
+files.delete "/var/lib/jenkins/puppet/#{title}/default.yml"
+files.each do |file|
+  yml = YAML.load_file(file)
+  default.deep_merge!(yml) 
+end
 
 -%>
 <?xml version='1.0' encoding='UTF-8'?>

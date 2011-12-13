@@ -17,6 +17,7 @@ define jenkins::plugin($version=0) {
       path     => ["/usr/bin", "/usr/sbin",],
       user     => "jenkins",
       unless   => "test -f ${plugin_dir}/${plugin}",
+      notify => Class['jenkins::service'],
   }
 
 
@@ -26,7 +27,6 @@ define jenkins::plugin($version=0) {
       ensure => present,
       require => Exec["download-${name}"],
       mode => '644',
-      notify => Class['jenkins::service'],
   }
 
   file {

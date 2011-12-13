@@ -6,6 +6,16 @@ class jenkins::job::factor {
       job_type => "matrix-project",
   }
 
+  jenkins::plugin::git {
+    $job_name:
+      url => "git://github.com/justinstoller/facter.git",
+  }
+
+  jenkins::plugin::github {
+    $job_name:
+      url => "https://github.com/justinstoller/facter",
+  }
+
   jenkins::jobs::build_step {
     $job_name:
       action => "rake spec",

@@ -38,23 +38,10 @@ define jenkins::jobs::setup($job_type = "matrix-project") {
   }
 
   file {
-    "/var/lib/jenkins/puppet/${title}/compiled.xml":
-      ensure => present,
-      content => template("jenkins/xml_builder"),
-  }
-
-  file {
     "/var/lib/jenkins/jobs/${title}/config.xml":
       ensure => present,
       source => "/var/lib/jenkins/puppet/${title}/compiled.xml",
       owner => "jenkins",
       group => "jenkins",
   }
-
-#  exec {
-#    "compile_$title":
-#      subscribe => File["/var/lib/jenkins/puppet/${title}"],
-#      require => File["/var/lib/jenkins/puppet/${title}"],
-#      cmd => "/opt/puppet/bin/ruby /etc/puppetlabs/puppet/modules/jenkins/files/
-#  }
 }

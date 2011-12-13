@@ -6,4 +6,6 @@ class jenkins::plugins::defaults {
   jenkins::plugin { "ssh-slaves": }
   jenkins::plugin { "subversion": }
   jenkins::plugin { "translation": }
+  jenkins::plugin { "git": }
+  jenkins::plugin { "github": }
 }
