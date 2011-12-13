@@ -1,7 +1,7 @@
-define jenkins::jobs::setup($type = "matrix-project") {
+define jenkins::jobs::setup($job_type = "matrix-project") {
 
   file {
-    "/var/lib/jenkins/puppet/$title":
+    "/var/lib/jenkins/puppet/${title}":
       require => File["/var/lib/jenkins/puppet"],
       ensure => directory,
   }

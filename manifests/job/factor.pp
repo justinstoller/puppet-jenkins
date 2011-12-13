@@ -3,7 +3,7 @@ class jenkins::job::factor {
 
   jenkins::jobs::setup { 
     $job_name:
-      type => "matrix-project",
+      job_type => "matrix-project",
   }
 
   jenkins::jobs::build_step {
