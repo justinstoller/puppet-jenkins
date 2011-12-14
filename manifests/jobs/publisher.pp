@@ -10,29 +10,10 @@ define jenkins::jobs::publisher (
       require => Jenkins::Jobs::Setup["${job_name}"],
       notify => Jenkins::Jobs::Writer["${job_name}"],
       content => "
-        actions:
-        description:
-        keepDependencies:
-        properties:
-        scm:
-          parent_class: 'hudson.scm.NullSCM'
-        canRoam: true
-        disabled: false
-        blockBuildWhenDownstreamBuilding: false
-        blockBuildWhenUpstreamBuilding: false
-        triggers:
-          parent_class: 'vector'
-        concurrentBuild: false
-        axes:
-          hudson.matrix.LabelAxis:
-            name:
-            values:
-        builders:
         publishers:
           hudson.tasks.Mailer:
             recipients: '${recipients}'
             dontNotifyEveryUnstableBuild: $not_every_unstable
-            sendToIndividuals: $individuals
-        buildWrappers: "
+            sendToIndividuals: $individuals ",
   }
 }

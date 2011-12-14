@@ -10,10 +10,6 @@ define jenkins::plugin::git (
       require => Jenkins::Jobs::Setup["${job_name}"],
       notify => Jenkins::Jobs::Writer["${job_name}"],
       content => "
-        actions:
-        description:
-        keepDependencies:
-        properties:
         scm:
           parent_class: 'hudson.plugins.git.GitSCM'
           configVersion: '2'
@@ -45,17 +41,6 @@ define jenkins::plugin::git (
           gitConfigName:
           gitConfigEmail:
           skipTag: false
-          scmName:
-        canRoam: true
-        disabled: false
-        blockBuildWhenDownstreamBuilding: false
-        blockBuildWhenUpstreamBuilding: false
-        triggers:
-          parent_class: 'vector'
-        concurrentBuild: false
-        axes:
-        builders:
-        publishers:
-        buildWrappers: "
+          scmName: ",
   }
 }
