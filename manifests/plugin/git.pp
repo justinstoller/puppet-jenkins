@@ -8,6 +8,7 @@ define jenkins::plugin::git (
   file {
     "/var/lib/jenkins/puppet/${job_name}/git.yml":
       require => Jenkins::Jobs::Setup["${job_name}"],
+      notify => Jenkins::Jobs::Writer["${job_name}"],
       content => "
         actions:
         description:

@@ -12,6 +12,7 @@ define jenkins::jobs::build_step (
   file {
     "/var/lib/jenkins/puppet/$job_name/${step}_build_step.yml":
       require => Jenkins::Jobs::Setup["${job_name}"],
+      notify => Jenkins::Jobs::Writer["${job_name}"],
       content => "
         actions:
         description:

@@ -8,7 +8,8 @@ define jenkins::jobs::setup($job_type = "matrix-project") {
 
   file {
     "/var/lib/jenkins/puppet/${title}/default.yml":
-      require => File["/var/lib/jenkins/puppet/$title"],
+      require => File["/var/lib/jenkins/puppet/${title}"],
+      notify => Jenkins::Jobs::Writer["${title}"],
       content => "
         actions:
         description:
@@ -38,10 +39,10 @@ define jenkins::jobs::setup($job_type = "matrix-project") {
   }
 
   file {
-    "/var/lib/jenkins/jobs/${title}/config.xml":
+    "/var/lib/jenkins/puppet/${title}/compiled.xml":
       ensure => present,
-      source => "/var/lib/jenkins/puppet/${title}/compiled.xml",
-      owner => "jenkins",
-      group => "jenkins",
+      content => template("jenkins/xml_builder"),
+      notify => Jenkins::Jobs::Writer["${title}"],
+      subscribe => File["/var/lib/jenkins/puppet/${title}"],
   }
 }

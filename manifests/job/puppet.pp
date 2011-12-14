@@ -16,4 +16,6 @@ class jenkins::job::puppet {
     $job_name:
       recipients => 'justin@puppetlabs.com',
   }
+ 
+  jenkins::jobs::writer { $job_name: }
 }

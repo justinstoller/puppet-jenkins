@@ -26,4 +26,6 @@ class jenkins::job::factor {
       recipients => 'justin@puppetlabs',
       not_every_unstable => true,
   }
+
+  jenkins::jobs::writer { $job_name: }
 }
