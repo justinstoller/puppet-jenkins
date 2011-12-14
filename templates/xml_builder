@@ -239,7 +239,30 @@ end
 
 require 'yaml'
 
-default = YAML.load_file "/var/lib/jenkins/puppet/#{title}/default.yml" 
+default = %q{ ---
+actions:
+description:
+keepDependencies: false
+properties:
+scm:
+  parent_class: 'hudson.scm.NullSCM'
+canRoam: true
+disabled: false
+blockBuildWhenDownstreamBuilding: false
+blockBuildWhenUpstreamBuilding: false
+triggers:
+  parent_class: 'vector'
+concurrentBuild: false
+axes:
+  hudson.matrix.LabelAxis:
+    name:
+    values:
+builders:
+publishers:
+buildWrappers:
+}
+
+default = YAML.load default
 files = Dir.glob "/var/lib/jenkins/puppet/#{title}/*.yml"
 files.delete "/var/lib/jenkins/puppet/#{title}/default.yml"
 yamls = files.map do |file|
@@ -254,7 +277,7 @@ default = yamls.inject(default) {|memo,yml| memo.deep_merge!(yml) }
 <%- default.each_pair do |tk,tv| -%>
   <%- if tv.respond_to?(:merge) -%>
   <%- if pklass = tv.values_at('parent_class')[0] -%>
-    <%- top = "#{tk} class='#{pklass}'" -%>
+    <%- top = "#{tk} class=\"#{pklass}\"" -%>
     <%- tv.delete('parent_class') -%>
   <%- else -%>
     <%- top = tk -%>
@@ -263,7 +286,7 @@ default = yamls.inject(default) {|memo,yml| memo.deep_merge!(yml) }
   <%- tv.each_pair do |fk,fv| -%>
   <%- if fv.respond_to?(:merge) -%>
     <%- if pklass = fv.values_at('parent_class')[0] -%>
-      <%- top = "#{fk} class='#{pklass}'" -%>
+      <%- top = "#{fk} class=\"#{pklass}\"" -%>
       <%- fv.delete('parent_class') -%>
     <%- else -%>
       <%- top = fk -%>
@@ -272,7 +295,7 @@ default = yamls.inject(default) {|memo,yml| memo.deep_merge!(yml) }
     <%- fv.each_pair do |sk,sv| -%>
     <%- if sv.respond_to?(:merge) -%>
       <%- if pklass = sv.values_at('parent_class')[0] -%>
-        <%- top = "#{sk} class='#{pklass}'" -%>
+        <%- top = "#{sk} class=\"#{pklass}\"" -%>
         <%- sv.delete('parent_class') -%>
       <%- else -%>
         <%- top = sk -%>
@@ -281,7 +304,7 @@ default = yamls.inject(default) {|memo,yml| memo.deep_merge!(yml) }
       <%- sv.each_pair do |mk,mv| -%>
         <%- if mv.respond_to?(:merge) -%>
         <%- if pklass = mv.values_at('parent_class')[0] -%>
-          <%- top = "#{mk} class='#{pklass}'" -%>
+          <%- top = "#{mk} class=\"#{pklass}\"" -%>
           <%- mv.delete('parent_class') -%>
         <%- else -%>
           <%- top = mk -%>
@@ -294,6 +317,7 @@ default = yamls.inject(default) {|memo,yml| memo.deep_merge!(yml) }
         <<%= mk -%>><%= mv -%></<%= mk -%>>
         <%- end -%>
       <%- end -%>
+    </<%= sk -%>>
     <%- elsif sv == nil -%>
       <<%= sk -%>></<%= sk -%>>
     <%- else -%>

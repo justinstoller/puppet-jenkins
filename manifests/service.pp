@@ -6,5 +6,6 @@ class jenkins::service {
       hasstatus => true,
       hasrestart => true,
       require => Jenkins::Package['present'],
+      subscribe => File["/var/lib/jenkins/plugins"],
   }
 }

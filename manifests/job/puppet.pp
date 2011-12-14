@@ -1,10 +1,7 @@
 class jenkins::job::puppet {
   $job_name = "Puppet (master)"
 
-  jenkins::jobs::setup {
-    $job_name:
-      job_type => "matrix-project",
-  }
+  jenkins::jobs::setup { $job_name: }
 
   jenkins::jobs::build_step {
     $job_name:

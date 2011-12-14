@@ -3,7 +3,6 @@ class jenkins::job::factor {
 
   jenkins::jobs::setup { 
     $job_name:
-      job_type => "matrix-project",
   }
 
   jenkins::plugin::git {
@@ -13,7 +12,7 @@ class jenkins::job::factor {
 
   jenkins::plugin::github {
     $job_name:
-      url => "https://github.com/justinstoller/facter",
+      url => "https://github.com/justinstoller/facter/",
   }
 
   jenkins::jobs::build_step {

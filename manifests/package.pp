@@ -7,14 +7,28 @@ define jenkins::package() {
   user {
     "jenkins" :
       ensure => present,
+      require => Package["jenkins"],
+  }
+
+  file {
+    "/var/lib/jenkins/puppet/xml_builder":
+      source => "puppet:///modules/jenkins/xml_builder",
+      require => File["/var/lib/jenkins/puppet"],
   }
 
   file {
     "/var/lib/jenkins/plugins" :
       owner  => "jenkins",
-      ensure => directory,
+      group => "jenkins",
+      ensure => $title ? {
+        "present" => "directory",
+        "purged" => "absent",
+      },
       require => Package["jenkins"],
-      notify => Class["jenkins::service"],
+#      notify => $title ? {
+#        "present" => Class["jenkins::service"],
+#        "purged" => "",
+#      },
       purge => true,
       force => true,
       backup => false,
@@ -23,7 +37,11 @@ define jenkins::package() {
 
   file {
     "/var/lib/jenkins/puppet":
-      ensure => directory,
+      ensure => $title ? {
+        "present" => "directory",
+        "purged" => "absent",
+      },
+      require => Package["jenkins"],
   }
 }
 
