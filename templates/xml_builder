@@ -242,32 +242,76 @@ require 'yaml'
 default = YAML.load_file "/var/lib/jenkins/puppet/#{title}/default.yml" 
 files = Dir.glob "/var/lib/jenkins/puppet/#{title}/*.yml"
 files.delete "/var/lib/jenkins/puppet/#{title}/default.yml"
-files.each do |file|
-  yml = YAML.load_file(file)
-  default.deep_merge!(yml) 
+yamls = files.map do |file|
+  YAML.load_file(file)
 end
+
+default = yamls.inject(default) {|memo,yml| memo.deep_merge!(yml) }
 
 -%>
 <?xml version='1.0' encoding='UTF-8'?>
 <<%= job_type -%>>
-<%- default.each do |tk,tv| -%>
-  <%- if tv.kind_of?(Hash) -%>
-  <<%= tk -%>>
-    <%- tv.each do |fk,fv| -%>
-      <%- if fv.kind_of?(Hash) -%>
-    <<%= fk -%>>
-    </<%= fk -%>>
-      <%- elsif fv == nil -%>
-    <<%= fk -%> />
+<%- default.each_pair do |tk,tv| -%>
+  <%- if tv.respond_to?(:merge) -%>
+  <%- if pklass = tv.values_at('parent_class')[0] -%>
+    <%- top = "#{tk} class='#{pklass}'" -%>
+    <%- tv.delete('parent_class') -%>
+  <%- else -%>
+    <%- top = tk -%>
+  <%- end -%>
+  <<%= top -%>>
+  <%- tv.each_pair do |fk,fv| -%>
+  <%- if fv.respond_to?(:merge) -%>
+    <%- if pklass = fv.values_at('parent_class')[0] -%>
+      <%- top = "#{fk} class='#{pklass}'" -%>
+      <%- fv.delete('parent_class') -%>
+    <%- else -%>
+      <%- top = fk -%>
+    <%- end -%>
+    <<%= top -%>>
+    <%- fv.each_pair do |sk,sv| -%>
+    <%- if sv.respond_to?(:merge) -%>
+      <%- if pklass = sv.values_at('parent_class')[0] -%>
+        <%- top = "#{sk} class='#{pklass}'" -%>
+        <%- sv.delete('parent_class') -%>
       <%- else -%>
-    <<%= fk -%>><%= fv %></<%= fk -%>>
+        <%- top = sk -%>
       <%- end -%>
+      <<%= top -%>>
+      <%- sv.each_pair do |mk,mv| -%>
+        <%- if mv.respond_to?(:merge) -%>
+        <%- if pklass = mv.values_at('parent_class')[0] -%>
+          <%- top = "#{mk} class='#{pklass}'" -%>
+          <%- mv.delete('parent_class') -%>
+        <%- else -%>
+          <%- top = mk -%>
+        <%- end -%>
+        <<%= top -%>>
+        </<%= mk -%>
+        <%- elsif mv == nil -%>
+        <<%= mk -%>></<%= mk -%>>
+        <%- else -%>
+        <<%= mk -%>><%= mv -%></<%= mk -%>>
+        <%- end -%>
+      <%- end -%>
+    <%- elsif sv == nil -%>
+      <<%= sk -%>></<%= sk -%>>
+    <%- else -%>
+      <<%= sk -%>><%= sv -%></<%= sk -%>>
+    <%- end -%>
+    <%- end -%>
+    </<%= fk -%>>
+    <%- elsif fv == nil -%>
+    <<%= fk -%>></<%= fk -%>>
+    <%- else -%>
+    <<%= fk -%>><%= fv -%></<%= fk -%>>
+    <%- end -%>
     <%- end -%>
   </<%= tk -%>>
   <%- elsif tv == nil -%>
-  <<%= tk -%> />
+  <<%= tk -%>></<%= tk -%>>
   <%- else -%>
-  <<%= tk -%>><%= tv %></<%= tk -%>>
+  <<%= tk -%>><%= tv -%></<%= tk -%>>
   <%- end -%>
 <%- end -%>
 </<%= job_type -%>>
