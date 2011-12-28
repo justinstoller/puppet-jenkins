@@ -1,5 +1,5 @@
-class jenkins::job::factor {
-  $job_name = "Factor (master)"
+class jenkins::job::facter {
+  $job_name = "Facter (master)"
 
   jenkins::jobs::setup { 
     $job_name:

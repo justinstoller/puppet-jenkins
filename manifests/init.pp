@@ -11,7 +11,7 @@ class jenkins {
       -> Jenkins::Package["present"] 
       -> Class["jenkins::service"]
 
-    include jenkins::job::factor
+    include jenkins::job::facter
     include jenkins::job::puppet
   }
 }
