@@ -1,14 +1,14 @@
 
 define jenkins::plugin::git (
-  $job_name = $title,
-  $url,
-  $branch = "master"
+  $branch   = 'master',
+  $job_name = $jenkins::plugin::git::title,
+  $url
 ) {
-  
+
   file {
     "/var/lib/jenkins/puppet/${job_name}/git.yml":
-      require => Jenkins::Jobs::Setup["${job_name}"],
-      notify => Jenkins::Jobs::Writer["${job_name}"],
+      require => Jenkins::Jobs::Setup[$job_name],
+      notify  => Jenkins::Jobs::Writer[$job_name],
       content => "
         scm:
           parent_class: 'hudson.plugins.git.GitSCM'
@@ -32,7 +32,7 @@ define jenkins::plugin::git (
           buildChooser:
             parent_class: 'hudson.plugins.git.util.DefaultBuildChooser'
           gitTool: Default
-          submoduleCfg: 
+          submoduleCfg:
             parent_class: 'list'
           relativeTargetDir:
           reference:
