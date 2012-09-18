@@ -1,0 +1,8 @@
+name    'jenkins'
+version '1.0.0-beta'
+source 'https://github.com/justinstoller/puppet-jenkins'
+author 'Justin Stoller'
+license '3 clause BSD'
+summary 'A Puppet Module to install and configure Jenkins CI and its jobs'
+description 'This Module allows users to quickly install Jenkins and any of its officially provided plugins. It provides a simple, extensible way to configure jobs and their plugin dependant settings.'
+project_page 'https://github.com/justinstoller/puppet-jenkins'

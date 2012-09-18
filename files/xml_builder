@@ -1,0 +1,484 @@
+#!/opt/puppet/bin/ruby
+
+require 'yaml'
+require 'erb'
+
+# deep_merge was written by Steve Midgley, and is now maintained by Daniel DeLeo.
+# The official home of deep_merge on the internet is now
+# https://github.com/danielsdeleo/deep_merge
+# Copyright (c) 2008 Steve Midgley, released under the MIT license
+# This was copied, stripped of full line comments and debugging as of
+# commit 308cb1c47b42625231d2653b6303957aa736f0af on Dec. 12th, 2011
+#  - Justin Stoller
+module DeepMerge
+
+  class InvalidParameter < StandardError; end
+
+  DEFAULT_FIELD_KNOCKOUT_PREFIX = '--'
+
+  def self.deep_merge!(source, dest, options = {})
+    merge_debug = options[:merge_debug] || false
+    overwrite_unmergeable = !options[:preserve_unmergeables]
+    knockout_prefix = options[:knockout_prefix] || nil
+    raise InvalidParameter, "knockout_prefix cannot be an empty string in deep_merge!" if knockout_prefix == ""
+    raise InvalidParameter, "overwrite_unmergeable must be true if knockout_prefix is specified in deep_merge!" if knockout_prefix && !overwrite_unmergeable
+    array_split_char = options[:unpack_arrays] || false
+    sort_merged_arrays = options[:sort_merged_arrays] || false
+    merge_hash_arrays = options[:merge_hash_arrays] || false
+    di = options[:debug_indent] || ''
+    return dest if source.nil?
+    if !(dest) && overwrite_unmergeable
+      dest = source; return dest
+    end
+
+    if source.kind_of?(Hash)
+      source.each do |src_key, src_value|
+        if dest.kind_of?(Hash)
+          if dest[src_key]
+            dest[src_key] = deep_merge!(src_value, dest[src_key], options.merge(:debug_indent => di + '  '))
+          else # dest[src_key] doesn't exist so we want to create and overwrite it (but we do this via deep_merge!)
+            begin
+              src_dup = src_value.dup # we dup src_value if possible because we're going to merge into it (since dest is empty)
+            rescue TypeError
+              src_dup = src_value
+            end
+            dest[src_key] = deep_merge!(src_value, src_dup, options.merge(:debug_indent => di + '  '))
+          end
+        else # dest isn't a hash, so we overwrite it completely (if permitted)
+          if overwrite_unmergeable
+            dest = overwrite_unmergeables(source, dest, options)
+          end
+        end
+      end
+    elsif source.kind_of?(Array)
+      if array_split_char
+        source = source.join(array_split_char).split(array_split_char)
+        if dest.kind_of?(Array)
+          dest = dest.join(array_split_char).split(array_split_char)
+        end
+      end
+      if source.index(knockout_prefix)
+        dest = clear_or_nil(dest); source.delete(knockout_prefix)
+      end
+      if dest.kind_of?(Array)
+        if knockout_prefix
+          source.delete_if do |ko_item|
+            retval = false
+            item = ko_item.respond_to?(:gsub) ? ko_item.gsub(%r{^#{knockout_prefix}}, "") : ko_item
+            if item != ko_item
+              dest.delete(item)
+              dest.delete(ko_item)
+              retval = true
+            end
+            retval
+          end
+        end
+        source_all_hashes = source.all? { |i| i.kind_of?(Hash) }
+        dest_all_hashes = dest.all? { |i| i.kind_of?(Hash) }
+        if merge_hash_arrays && source_all_hashes && dest_all_hashes
+          list = []
+          dest.each_index do |i|
+            list[i] = deep_merge!(source[i] || {}, dest[i],
+                                  options.merge(:debug_indent => di + '  '))
+          end
+          list += source[dest.count..-1] if source.count > dest.count
+          dest = list
+        else
+          dest = dest | source
+        end
+        dest.sort! if sort_merged_arrays
+      elsif overwrite_unmergeable
+        dest = overwrite_unmergeables(source, dest, options)
+      end
+    else # src_hash is not an array or hash, so we'll have to overwrite dest
+      dest = overwrite_unmergeables(source, dest, options)
+    end
+    dest
+  end # deep_merge!
+
+  def self.overwrite_unmergeables(source, dest, options)
+    merge_debug = options[:merge_debug] || false
+    overwrite_unmergeable = !options[:preserve_unmergeables]
+    knockout_prefix = options[:knockout_prefix] || false
+    di = options[:debug_indent] || ''
+    if knockout_prefix && overwrite_unmergeable
+      if source.kind_of?(String) # remove knockout string from source before overwriting dest
+        src_tmp = source.gsub(%r{^#{knockout_prefix}},"")
+      elsif source.kind_of?(Array) # remove all knockout elements before overwriting dest
+        src_tmp = source.delete_if {|ko_item| ko_item.kind_of?(String) && ko_item.match(%r{^#{knockout_prefix}}) }
+      else
+        src_tmp = source
+      end
+      if src_tmp == source # if we didn't find a knockout_prefix then we just overwrite dest
+        dest = src_tmp
+      else # if we do find a knockout_prefix, then we just delete dest
+        dest = ""
+      end
+    elsif overwrite_unmergeable
+      dest = source
+    end
+    dest
+  end
+
+  def self.clear_or_nil(obj)
+    if obj.respond_to?(:clear)
+      obj.clear
+    else
+      obj = nil
+    end
+    obj
+  end
+
+end # module DeepMerge
+
+module DeepMerge
+  module DeepMergeHash
+    def ko_deep_merge!(source, options = {})
+      default_opts = {:knockout_prefix => "--", :preserve_unmergeables => false}
+      DeepMerge::deep_merge!(source, self, default_opts.merge(options))
+    end
+
+    def deep_merge!(source, options = {})
+      default_opts = {:preserve_unmergeables => false}
+      DeepMerge::deep_merge!(source, self, default_opts.merge(options))
+    end
+
+    def deep_merge(source, options = {})
+      default_opts = {:preserve_unmergeables => true}
+      DeepMerge::deep_merge!(source, self, default_opts.merge(options))
+    end
+
+  end # DeepMergeHashExt
+end
+
+YAML.add_builtin_type("omap") do |type, val|
+  ActiveSupport::OrderedHash[val.map{ |v| v.to_a.first }]
+end
+
+class Hash
+  include DeepMerge::DeepMergeHash
+
+end
+class OrderedHash < ::Hash
+    def to_yaml_type
+      "!tag:yaml.org,2002:omap"
+    end
+
+    def encode_with(coder)
+      coder.represent_seq '!omap', map { |k,v| { k => v } }
+    end
+
+    def to_yaml(opts = {})
+      if YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck?
+        return super
+      end
+
+      YAML.quick_emit(self, opts) do |out|
+        out.seq(taguri) do |seq|
+          each do |k, v|
+            seq.add(k => v)
+          end
+        end
+      end
+    end
+
+    def nested_under_indifferent_access
+      self
+    end
+
+    # Returns true to make sure that this hash is extractable via <tt>Array#extract_options!</tt>
+    def extractable_options?
+      true
+    end
+
+    # Hash is ordered in Ruby 1.9!
+    if RUBY_VERSION < '1.9'
+
+      # In MRI the Hash class is core and written in C. In particular, methods are
+      # programmed with explicit C function calls and polymorphism is not honored.
+      #
+      # For example, []= is crucial in this implementation to maintain the @keys
+      # array but hash.c invokes rb_hash_aset() originally. This prevents method
+      # reuse through inheritance and forces us to reimplement stuff.
+      #
+      # For instance, we cannot use the inherited #merge! because albeit the algorithm
+      # itself would work, our []= is not being called at all by the C code.
+      def initialize(*args, &block)
+        super
+        @keys = []
+      end
+
+      def self.[](*args)
+        ordered_hash = new
+
+        if (args.length == 1 && args.first.is_a?(Array))
+          args.first.each do |key_value_pair|
+            next unless (key_value_pair.is_a?(Array))
+            ordered_hash[key_value_pair[0]] = key_value_pair[1]
+          end
+
+          return ordered_hash
+        end
+
+        unless (args.size % 2 == 0)
+          raise ArgumentError.new("odd number of arguments for Hash")
+        end
+
+        args.each_with_index do |val, ind|
+          next if (ind % 2 != 0)
+          ordered_hash[val] = args[ind + 1]
+        end
+
+        ordered_hash
+      end
+
+      def initialize_copy(other)
+        super
+        # make a deep copy of keys
+        @keys = other.keys
+      end
+
+      def []=(key, value)
+        @keys << key unless has_key?(key)
+        super
+      end
+
+      def delete(key)
+        if has_key? key
+          index = @keys.index(key)
+          @keys.delete_at index
+        end
+        super
+      end
+
+      def delete_if
+        super
+        sync_keys!
+        self
+      end
+
+      def reject!
+        super
+        sync_keys!
+        self
+      end
+
+      def reject(&block)
+        dup.reject!(&block)
+      end
+
+      def keys
+        @keys.dup
+      end
+
+      def values
+        @keys.collect { |key| self[key] }
+      end
+
+      def to_hash
+        self
+      end
+
+      def to_a
+        @keys.map { |key| [ key, self[key] ] }
+      end
+
+      def each_key
+        return to_enum(:each_key) unless block_given?
+        @keys.each { |key| yield key }
+        self
+      end
+
+      def each_value
+        return to_enum(:each_value) unless block_given?
+        @keys.each { |key| yield self[key]}
+        self
+      end
+
+      def each
+        return to_enum(:each) unless block_given?
+        @keys.each {|key| yield [key, self[key]]}
+        self
+      end
+
+      def each_pair
+        return to_enum(:each_pair) unless block_given?
+        @keys.each {|key| yield key, self[key]}
+        self
+      end
+
+      alias_method :select, :find_all
+
+      def clear
+        super
+        @keys.clear
+        self
+      end
+
+      def shift
+        k = @keys.first
+        v = delete(k)
+        [k, v]
+      end
+
+      def merge!(other_hash)
+        if block_given?
+          other_hash.each { |k, v| self[k] = key?(k) ? yield(k, self[k], v) : v }
+        else
+          other_hash.each { |k, v| self[k] = v }
+        end
+        self
+      end
+      alias_method :update, :merge!
+
+      def merge(other_hash, &block)
+        dup.merge!(other_hash, &block)
+      end
+
+      # When replacing with another hash, the initial order of our keys must come from the other hash -ordered or not.
+      def replace(other)
+        super
+        @keys = other.keys
+        self
+      end
+
+      def invert
+        OrderedHash[self.to_a.map!{|key_value_pair| key_value_pair.reverse}]
+      end
+
+      def inspect
+        "#<OrderedHash #{super}>"
+      end
+
+      private
+        def sync_keys!
+          @keys.delete_if {|k| !has_key?(k)}
+        end
+    end
+end
+
+default = OrderedHash.new
+default['actions'] = nil
+default['description'] = nil
+default['keepDependencies'] = false
+default['properties'] = nil
+default['scm'] = {'parent_class' => 'hudson.scm.NullSCM'}
+default['canRoam'] = true
+default['disabled'] = false
+default['blockBuildWhenDownstreamBuilding'] = false
+default['blockBuildWhenUpStreamBuilding'] = false
+default['triggers'] = {'parent_class' => 'vector'}
+default['concurrentBuild'] = false
+default['axes'] = {'hudson.matrix.LabelAxis' => {'name' => nil, 'values' => nil}}
+default['builders'] = nil
+default['publishers'] = nil
+default['buildWrappers'] = nil
+
+#default = %q{ ---
+#- actions:
+#- description:
+#- keepDependencies: false
+#- properties:
+#- scm:
+#    parent_class: 'hudson.scm.NullSCM'
+#- canRoam: true
+#- disabled: false
+#- blockBuildWhenDownstreamBuilding: false
+#- blockBuildWhenUpstreamBuilding: false
+#- triggers:
+#    parent_class: 'vector'
+#- concurrentBuild: false
+#- axes:
+#    hudson.matrix.LabelAxis:
+#      name:
+#      values:
+#- builders:
+#- publishers:
+#- buildWrappers:
+#}
+#default = YAML.load default
+
+title = ARGV[1]
+
+files = Dir.glob "/var/lib/jenkins/puppet/#{title}/*.yml"
+files.delete "/var/lib/jenkins/puppet/#{title}/default.yml"
+yamls = files.map do |file|
+  YAML.load_file(file)
+end
+
+yamls.each do |yml|
+  default.deep_merge!(yml)
+end
+
+job_type = ARGV[2]
+
+File.open ARGV[0], 'w+' do |file|
+file.puts "<?xml version='1.0' encoding='UTF-8'?>"
+file.puts "<#{job_type}>"
+default.each do |tk,tv|
+  if tv.respond_to?(:merge)
+    if pklass = tv.values_at('parent_class')[0]
+      top = "#{tk} class=\"#{pklass}\""
+      tv.delete('parent_class')
+    else
+      top = tk
+    end
+    file.puts "  <#{top}>"
+    tv.each_pair do |fk,fv|
+    if fv.respond_to?(:merge)
+      if pklass = fv.values_at('parent_class')[0]
+        top = "#{fk} class=\"#{pklass}\""
+        fv.delete('parent_class')
+      else
+        top = fk
+      end
+      file.puts "    <#{top}>"
+      fv.each_pair do |sk,sv|
+      if sv.respond_to?(:merge)
+        if pklass = sv.values_at('parent_class')[0]
+          top = "#{sk} class=\"#{pklass}\""
+          sv.delete('parent_class')
+        else
+          top = sk
+        end
+        file.puts "      <#{top}>"
+        sv.each_pair do |mk,mv|
+          if mv.respond_to?(:merge)
+            if pklass = mv.values_at('parent_class')[0]
+              top = "#{mk} class=\"#{pklass}\""
+              mv.delete('parent_class')
+            else
+              top = mk
+            end
+            file.puts "        <#{top}>"
+            file.puts "        </#{mk}>"
+          elsif mv == nil
+            file.puts "        <#{mk}></#{mk}>"
+          else
+            file.puts "        <#{mk}>#{mv}</#{mk}>"
+          end
+        end
+        file.puts "      </#{sk}>"
+      elsif sv == nil
+        file.puts "      <#{sk}></#{sk}>"
+      else
+        file.puts "      <#{sk}>#{sv}</#{sk}>"
+      end
+    end
+    file.puts "    </#{fk}>"
+      elsif fv == nil
+        file.puts "    <#{fk}></#{fk}>"
+      else
+        file.puts "    <#{fk}>#{fv}</#{fk}>"
+      end
+      end
+   file.puts "  </#{tk}>"
+    elsif tv == nil
+      file.puts "  <#{tk}></#{tk}>"
+    else
+     file.puts "  <#{tk}>#{tv}</#{tk}>"
+  end
+end
+file.puts "</#{job_type}>"
+end
+
