@@ -12,10 +12,11 @@ RETVAL=0
 
 PID_FILE=/var/run/jenkins-slave.pid
 LOCK_FILE=/var/lock/jenkins-slave
+LOG_FILE=/var/log/jenkins-slave.log
 
 slave_start() {
   echo Starting Jenkins Slave...
-  nohup java -jar <%= slave_home -%>/<%= client_jar -%> <%= ui_user_flag -%> <%= ui_pass_flag -%> -name <%= fqdn -%> -executors <%= executors -%> <%= masterurl_flag -%> <%= labels_flag -%>  > $LOG_FILE 2>/dev/null &
+  su -l <%= slave_user -%> -s /bin/bash -c "nohup java -jar <%= slave_home -%>/<%= client_jar -%> <%= ui_user_flag -%> <%= ui_pass_flag -%> -name <%= fqdn -%> -executors <%= executors -%> <%= masterurl_flag -%> <%= labels_flag -%>  &>/dev/null &"
   pgrep -f <%= client_jar -%> > $PID_FILE
   RETVAL=$?
   [ $RETVAL -eq 0 ] && touch $LOCK_FILE
@@ -24,7 +25,7 @@ slave_stop() {
   echo Stopping Jenkins Slave...
   pid=`cat $PID_FILE`
 
-  kill -p $pid
+  kill $pid
 
   RETVAL=$?
   [ $RETVAL -eq 0 ] && rm -f $LOCK_FILE
