@@ -15,7 +15,7 @@ LOCK_FILE=/var/lock/jenkins-slave
 
 slave_start() {
   echo Starting Jenkins Slave...
-  nohup java -jar <%= slave_home -%>/<%= client_jar -%> <%= ui_user_flag -%> <%= ui_pass_flag -%> -name <%= fqdn -%> -executors <%= executors -%> <%= masterurl_flag -%> <%= labels_flag -%> &'
+  nohup java -jar <%= slave_home -%>/<%= client_jar -%> <%= ui_user_flag -%> <%= ui_pass_flag -%> -name <%= fqdn -%> -executors <%= executors -%> <%= masterurl_flag -%> <%= labels_flag -%>  > $LOG_FILE 2>/dev/null &
   pgrep -f -u <%= slave_user -%> <%= client_jar -%> > $PID_FILE
   RETVAL=$?
   [ $RETVAL -eq 0 ] && touch $LOCK_FILE
