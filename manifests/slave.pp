@@ -118,7 +118,7 @@ class jenkins::slave (
   else {$ui_user_flag = ''}
 
   if $ui_pass {
-    $ui_pass_flag = "-password ${ui_pass}"
+    $ui_pass_flag = "-password '${ui_pass}'"
   } else {
     $ui_pass_flag = ''
   }
