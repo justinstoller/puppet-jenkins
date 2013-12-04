@@ -8,11 +8,8 @@
 #
 RETVAL=0
 
-. /etc/init.d/functions
-
 PID_FILE=/var/run/jenkins-slave.pid
 LOCK_FILE=/var/lock/jenkins-slave
-LOG_FILE=/var/log/jenkins-slave.log
 
 slave_start() {
   echo Starting Jenkins Slave...
